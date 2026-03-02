@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Creative Studio</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+        textarea, select, button { font-size: 16px; margin: 10px 0; padding: 8px; width: 100%; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        #story-output, #comic-result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; }
+        img { max-width: 100%; border: 1px solid #ccc; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Creative Studio</h1>
+
+        <form hx-post="/api/generate-story" hx-target="#story-output" hx-indicator="#story-spinner">
+            <textarea name="prompt" placeholder="Enter story idea... (e.g., A young wizard discovers a hidden realm)" rows="4"></textarea>
+            <select name="genre">
+                <option value="fantasy">Fantasy</option>
+                <option value="scifi">Sci-Fi</option>
+                <option value="manga">Manga</option>
+            </select>
+            <button type="submit">Generate Story</button>
+            <span id="story-spinner" class="htmx-indicator">Generating...</span>
+        </form>
+
+        <div id="story-output"></div>
+
+        <div id="comic-section" style="display:none;">
+            <button hx-post="/api/generate-comic" hx-target="#comic-result" hx-include="[name='story']" hx-indicator="#comic-spinner">
+                Create Comic from Story
+            </button>
+            <span id="comic-spinner" class="htmx-indicator">Creating comic...</span>
+            <div id="comic-result"></div>
+        </div>
+    </div>
+
+    <script>
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.target.id === 'story-output') {
+                // Show comic section and store story data
+                const storyData = evt.detail.xhr.response;
+                try {
+                    const data = JSON.parse(storyData);
+                    if (data.success) {
+                        document.getElementById('comic-section').style.display = 'block';
+                        // Store story as hidden input for later use
+                        let hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'story';
+                        hidden.value = JSON.stringify(data.story);
+                        document.getElementById('comic-section').appendChild(hidden);
+                    }
+                } catch (e) {}
+            }
+        });
+    </script>
+</body>
+</html>
